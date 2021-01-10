@@ -81,6 +81,11 @@ ggplot(GofFive, aes(x=epa_per_rush, y=epa_per_pass)) + geom_image(image = GofFiv
 #And now save it
 ggsave("FirstChart.jpg", dpi = 300) 
 
+
+
+
+# *** PART TWO ***
+
 #Look at the columns of the data, explore how it works
 glimpse(plays_2020)
 
