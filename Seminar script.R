@@ -80,3 +80,48 @@ ggplot(GofFive, aes(x=epa_per_rush, y=epa_per_pass)) + geom_image(image = GofFiv
   labs(x = "EPA per rush", y = "EPA per pass", title = "Group of Five offensive efficiency", caption = "Chart by Brendan Farrell | Data via @cfbscrapR")
 #And now save it
 ggsave("FirstChart.jpg", dpi = 300) 
+
+#Look at the columns of the data, explore how it works
+glimpse(plays_2020)
+
+#Just for fun, let's look at some different play types and see how often they happen
+Playtypes <- pbp_2020 %>% group_by(play_type) %>% summarize(
+  plays = n()
+)
+
+#Let's look at who some of the most efficient receivers are
+Receivers <- plays_2020 %>% group_by(receiver_player_name, pos_team) %>% summarize(
+  epa_per_play = mean(EPA, na.rm = TRUE),
+  success = mean(success, na.rm = TRUE),
+  targets = n(),
+  total_epa = sum(EPA, na.rm = TRUE)
+  
+)
+#We need to filter out the players who didn't have enough catches as well as NA (basically incomplete passes)
+Receivers <- Receivers %>% filter(targets >= 70 & receiver_player_name != "NA" & targets <116)
+
+#We need logos for our plot, so let's attach them (this is why we grouped by both receiver name *and* team)
+Receivers <- Receivers %>% left_join(cfblogos, by = c("pos_team" = "school"))
+
+#Let's make a plot out of our data
+#Parts:
+#geom_image is what makes the points, geom_hline makes the horizontal line, geom_vline makes the vertical line
+#geom_text_repel attaches player names and draws the lines, point.padding is how much distance between
+ggplot(Receivers, aes(x=targets, y=epa_per_play)) + geom_image(image = Receivers$logo, asp = 16/9) + 
+  geom_hline(yintercept = mean(Receivers$epa_per_play)) + geom_vline(xintercept = mean(Receivers$targets)) +
+  geom_text_repel(aes(label=receiver_player_name), point.padding = 0.75) +
+  labs(x = "Targets", y = "EPA per play", title = "Receiving efficiency", caption = "Chart by Brendan Farrell | Data via @cfbscrapR")
+#And now save it
+ggsave("ReceiverChart.jpg", dpi = 300) 
+
+#Basic bar chart with logos at the end of each bar
+#Notes: 
+#Reorder orders the chart in descending order (originally sorted by player name, so that's why we have to reorder it)
+#geom_bar() is what makes the bars
+#We use coord_flip to make the bars horizontal so that we can actually see the names
+#geom_image puts the images at the end of each bar
+ggplot(Receivers, aes(x = reorder(receiver_player_name, epa_per_play), weight = epa_per_play)) + 
+  geom_bar() + coord_flip() + geom_image(aes(x = receiver_player_name, y = epa_per_play, image = logo)) +
+  labs(x = "Receiver", y = "EPA per play")
+#And save
+ggsave("ReceiverBarChart.jpg", dpi = 300)
